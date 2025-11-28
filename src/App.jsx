@@ -4,32 +4,30 @@ import { useEffect, useState } from "react";
 //   TILE TYPES
 // =======================
 const TILE_TYPE = {
-  WALL: "WALL",     // mura / fuori città
-  GRASS: "GRASS",   // prato / campagna
-  ROAD: "ROAD",     // strade / piazze
-  CASTLE: "CASTLE", // castello
-  DUOMO: "DUOMO",   // piazza Duomo / centro
-  VILLA: "VILLA",   // villa comunale / belvedere
-  HOUSE: "HOUSE",   // case
-  AMPHI: "AMPHI",   // anfiteatro
+  WALL: "WALL",
+  GRASS: "GRASS",
+  ROAD: "ROAD",
+  CASTLE: "CASTLE",
+  DUOMO: "DUOMO",
+  VILLA: "VILLA",
+  HOUSE: "HOUSE",
+  AMPHI: "AMPHI",
   NPC: "NPC",
-  ENEMY: "ENEMY",   // non più usato sulla mappa, ma lasciato per eventuali usi futuri
+  ENEMY: "ENEMY",
 };
 
-// dimensioni mappa
 const MAP_WIDTH = 60;
 const MAP_HEIGHT = 40;
 
 // =======================
 //   SIMPLE INTERIORS
 // =======================
-
 function createSimpleInterior(width, height, labelType) {
   const map = Array.from({ length: height }, () =>
     Array.from({ length: width }, () => TILE_TYPE.ROAD)
   );
 
-  // bordo mura
+  // mura
   for (let x = 0; x < width; x++) {
     map[0][x] = TILE_TYPE.WALL;
     map[height - 1][x] = TILE_TYPE.WALL;
@@ -39,18 +37,13 @@ function createSimpleInterior(width, height, labelType) {
     map[y][width - 1] = TILE_TYPE.WALL;
   }
 
-  // "zona speciale" al centro
   const cx = Math.floor(width / 2);
   const cy = Math.floor(height / 2);
-  if (labelType === "DUOMO") {
-    map[cy][cx] = TILE_TYPE.DUOMO;
-  } else if (labelType === "CASTLE") {
-    map[cy][cx] = TILE_TYPE.CASTLE;
-  } else if (labelType === "VILLA") {
-    map[cy][cx] = TILE_TYPE.VILLA;
-  } else if (labelType === "AMPHI") {
-    map[cy][cx] = TILE_TYPE.AMPHI;
-  }
+
+  if (labelType === "DUOMO") map[cy][cx] = TILE_TYPE.DUOMO;
+  if (labelType === "CASTLE") map[cy][cx] = TILE_TYPE.CASTLE;
+  if (labelType === "VILLA") map[cy][cx] = TILE_TYPE.VILLA;
+  if (labelType === "AMPHI") map[cy][cx] = TILE_TYPE.AMPHI;
 
   return map;
 }
@@ -64,12 +57,11 @@ const AMPHI_INTERIOR = createSimpleInterior(14, 9, "AMPHI");
 //   MAP GENERATOR
 // =======================
 function createLuceraMap(width, height) {
-  // base: prato ovunque
   const map = Array.from({ length: height }, () =>
     Array.from({ length: width }, () => TILE_TYPE.GRASS)
   );
 
-  // mura esterne (bordo mappa)
+  // mura bordo
   for (let x = 0; x < width; x++) {
     map[0][x] = TILE_TYPE.WALL;
     map[height - 1][x] = TILE_TYPE.WALL;
@@ -82,42 +74,26 @@ function createLuceraMap(width, height) {
   const centerX = Math.floor(width / 2);
   const centerY = Math.floor(height / 2);
 
-  // =========================
-  // 1) PORTA TROIA (SUD) + CORSO PRINCIPALE
-  // =========================
-
-  // "porta" a sud: buco nelle mura + inizio corso
+  // Porta Troia + corso
   map[height - 1][centerX] = TILE_TYPE.ROAD;
   map[height - 2][centerX] = TILE_TYPE.ROAD;
-
-  // corso che sale verso il centro (fino quasi al Duomo)
   for (let y = height - 2; y >= centerY + 3; y--) {
     map[y][centerX] = TILE_TYPE.ROAD;
   }
-
-  // leggera deviazione verso ovest, come il corso che si stringe
   for (let x = centerX - 1; x >= centerX - 3; x--) {
     map[centerY + 3][x] = TILE_TYPE.ROAD;
   }
 
-  // =========================
-  // 2) PIAZZA DUOMO (al centro, forma "a diamante")
-  // =========================
-
+  // Piazza Duomo a diamante
   const duomoCenterX = centerX;
   const duomoCenterY = centerY;
 
   for (let y = duomoCenterY - 3; y <= duomoCenterY + 3; y++) {
     let halfWidth;
-    if (y === duomoCenterY - 3 || y === duomoCenterY + 3) {
-      halfWidth = 1;
-    } else if (y === duomoCenterY - 2 || y === duomoCenterY + 2) {
-      halfWidth = 2;
-    } else if (y === duomoCenterY - 1 || y === duomoCenterY + 1) {
-      halfWidth = 3;
-    } else {
-      halfWidth = 4;
-    }
+    if (y === duomoCenterY - 3 || y === duomoCenterY + 3) halfWidth = 1;
+    else if (y === duomoCenterY - 2 || y === duomoCenterY + 2) halfWidth = 2;
+    else if (y === duomoCenterY - 1 || y === duomoCenterY + 1) halfWidth = 3;
+    else halfWidth = 4;
 
     for (let x = duomoCenterX - halfWidth; x <= duomoCenterX + halfWidth; x++) {
       map[y][x] = TILE_TYPE.DUOMO;
@@ -127,18 +103,14 @@ function createLuceraMap(width, height) {
   const piazzaLeft = duomoCenterX - 4;
   const piazzaRight = duomoCenterX + 4;
 
-  // stradine dal Duomo verso ovest ed est (centro storico)
   for (let x = piazzaLeft - 4; x < piazzaLeft; x++) {
     map[duomoCenterY][x] = TILE_TYPE.ROAD;
   }
   for (let x = piazzaRight + 1; x <= piazzaRight + 4; x++) {
-    map[duomoCenterY - 1][x] = TILE_TYPE.ROAD; // verso anfiteatro
+    map[duomoCenterY - 1][x] = TILE_TYPE.ROAD;
   }
 
-  // =========================
-  // 3) VILLA (NORD-OVEST del Duomo, fuori centro)
-  // =========================
-
+  // Villa NW, fuori mura
   const villaTop = duomoCenterY - 10;
   const villaBottom = villaTop + 5;
   const villaCenterX = duomoCenterX - 10;
@@ -151,7 +123,6 @@ function createLuceraMap(width, height) {
     }
   }
 
-  // stradina che collega Duomo → Villa
   for (let y = duomoCenterY - 1; y >= villaBottom + 1; y--) {
     map[y][duomoCenterX - 3] = TILE_TYPE.ROAD;
   }
@@ -159,10 +130,7 @@ function createLuceraMap(width, height) {
     map[villaBottom + 1][x] = TILE_TYPE.ROAD;
   }
 
-  // =========================
-  // 4) CASTELLO (a Ovest della Villa, molto vicino)
-  // =========================
-
+  // Castello Ovest della villa
   const castleCenterY = villaTop - 1;
   const castleCenterX = villaLeft - 5;
   const castleTop = castleCenterY - 3;
@@ -170,13 +138,9 @@ function createLuceraMap(width, height) {
 
   for (let y = castleTop; y <= castleBottom; y++) {
     let halfWidth;
-    if (y === castleTop || y === castleBottom) {
-      halfWidth = 3;
-    } else if (y === castleTop + 1 || y === castleBottom - 1) {
-      halfWidth = 4;
-    } else {
-      halfWidth = 5;
-    }
+    if (y === castleTop || y === castleBottom) halfWidth = 3;
+    else if (y === castleTop + 1 || y === castleBottom - 1) halfWidth = 4;
+    else halfWidth = 5;
 
     const left = castleCenterX - halfWidth;
     const right = castleCenterX + halfWidth;
@@ -188,15 +152,11 @@ function createLuceraMap(width, height) {
     }
   }
 
-  // stradina Villa → Castello
   for (let x = villaLeft - 1; x >= castleCenterX + 1; x--) {
     map[villaTop + 1][x] = TILE_TYPE.ROAD;
   }
 
-  // =========================
-  // 5) ANFITEATRO (ad EST del centro storico)
-  // =========================
-
+  // Anfiteatro a Est
   const amphiTop = duomoCenterY - 1;
   const amphiBottom = amphiTop + 5;
   const amphiLeft = duomoCenterX + 12;
@@ -210,7 +170,6 @@ function createLuceraMap(width, height) {
     }
   }
 
-  // strada Duomo → Anfiteatro
   for (let x = piazzaRight + 1; x <= amphiLeft - 1; x++) {
     map[duomoCenterY - 1][x] = TILE_TYPE.ROAD;
   }
@@ -218,11 +177,8 @@ function createLuceraMap(width, height) {
     map[y][amphiLeft - 1] = TILE_TYPE.ROAD;
   }
 
-  // =========================
-  // PORTE SECONDARIE (fuori dalle mura)
-  // =========================
-
-  // --- Porta Foggia (Sud-Est) ---
+  // Porte
+  // Porta Foggia SE
   {
     const portaFoggiaX = duomoCenterX + 10;
     const portaFoggiaY = duomoCenterY + 10;
@@ -234,8 +190,6 @@ function createLuceraMap(width, height) {
       portaFoggiaY < height - 1
     ) {
       map[portaFoggiaY][portaFoggiaX] = TILE_TYPE.ROAD;
-
-      // strada dal centro verso Porta Foggia (a L)
       for (let x = piazzaRight + 2; x <= portaFoggiaX; x++) {
         map[duomoCenterY + 4][x] = TILE_TYPE.ROAD;
       }
@@ -243,7 +197,6 @@ function createLuceraMap(width, height) {
         map[y][portaFoggiaX] = TILE_TYPE.ROAD;
       }
 
-      // NPC a Porta Foggia
       map[portaFoggiaY][portaFoggiaX + 1] = {
         type: TILE_TYPE.NPC,
         id: "npc_porta_foggia",
@@ -251,7 +204,7 @@ function createLuceraMap(width, height) {
     }
   }
 
-  // --- Porta Albana (Sud-Ovest) ---
+  // Porta Albana SO
   {
     const portaAlbanaX = duomoCenterX - 10;
     const portaAlbanaY = duomoCenterY + 10;
@@ -263,8 +216,6 @@ function createLuceraMap(width, height) {
       portaAlbanaY < height - 1
     ) {
       map[portaAlbanaY][portaAlbanaX] = TILE_TYPE.ROAD;
-
-      // strada dal centro verso Porta Albana (a L)
       for (let x = piazzaLeft - 2; x >= portaAlbanaX; x--) {
         map[duomoCenterY + 4][x] = TILE_TYPE.ROAD;
       }
@@ -272,7 +223,6 @@ function createLuceraMap(width, height) {
         map[y][portaAlbanaX] = TILE_TYPE.ROAD;
       }
 
-      // NPC a Porta Albana
       map[portaAlbanaY][portaAlbanaX - 1] = {
         type: TILE_TYPE.NPC,
         id: "npc_porta_albana",
@@ -280,7 +230,7 @@ function createLuceraMap(width, height) {
     }
   }
 
-  // --- Porta San Severo (Nord-Est) ---
+  // Porta San Severo NE
   {
     const portaSanSeveroX = duomoCenterX + 10;
     const portaSanSeveroY = duomoCenterY - 10;
@@ -293,7 +243,6 @@ function createLuceraMap(width, height) {
     ) {
       map[portaSanSeveroY][portaSanSeveroX] = TILE_TYPE.ROAD;
 
-      // strada dal centro verso Porta San Severo
       for (let y = duomoCenterY - 3; y >= portaSanSeveroY; y--) {
         map[y][duomoCenterX + 4] = TILE_TYPE.ROAD;
       }
@@ -301,7 +250,6 @@ function createLuceraMap(width, height) {
         map[portaSanSeveroY][x] = TILE_TYPE.ROAD;
       }
 
-      // NPC a Porta San Severo
       map[portaSanSeveroY - 1][portaSanSeveroX] = {
         type: TILE_TYPE.NPC,
         id: "npc_porta_san_severo",
@@ -309,7 +257,7 @@ function createLuceraMap(width, height) {
     }
   }
 
-  // --- Porta San Giacomo (varco tra centro e anfiteatro) ---
+  // Porta San Giacomo tra centro e anfiteatro
   {
     const portaSanGiacomoY = duomoCenterY - 1;
     const portaSanGiacomoX = piazzaRight + 3;
@@ -329,10 +277,7 @@ function createLuceraMap(width, height) {
     }
   }
 
-  // =========================
-  // 6) QUARTIERI DI CASE ATTORNO AL CENTRO
-  // =========================
-
+  // case attorno al centro
   function isInSpecialArea(x, y) {
     const inVilla =
       y >= villaTop && y <= villaBottom && x >= villaLeft && x <= villaRight;
@@ -352,7 +297,6 @@ function createLuceraMap(width, height) {
     return inVilla || inCastle || inAmphi || inDuomo;
   }
 
-  // case a ovest del corso
   for (let y = 5; y < height - 4; y++) {
     for (let x = 2; x < centerX - 5; x++) {
       if (map[y][x] === TILE_TYPE.GRASS && !isInSpecialArea(x, y)) {
@@ -361,7 +305,6 @@ function createLuceraMap(width, height) {
     }
   }
 
-  // case a est del corso
   for (let y = 5; y < height - 4; y++) {
     for (let x = centerX + 5; x < width - 3; x++) {
       if (map[y][x] === TILE_TYPE.GRASS && !isInSpecialArea(x, y)) {
@@ -370,17 +313,12 @@ function createLuceraMap(width, height) {
     }
   }
 
-  // =========================
-  // 7) NPC (niente più nemici fissi)
-  // =========================
-
-  // NPC: guida in piazza Duomo
+  // NPC
   map[duomoCenterY][duomoCenterX] = {
     type: TILE_TYPE.NPC,
     id: "npc_duomo",
   };
 
-  // NPC: villa (belvedere) a Nord-Ovest
   const villaNpcY = villaTop + 2;
   const villaNpcX = villaCenterX;
   map[villaNpcY][villaNpcX] = {
@@ -388,7 +326,6 @@ function createLuceraMap(width, height) {
     id: "npc_villa",
   };
 
-  // NPC: Porta Troia (a sud lungo il corso)
   map[height - 3][centerX + 2] = {
     type: TILE_TYPE.NPC,
     id: "npc_porta_troia",
@@ -398,7 +335,7 @@ function createLuceraMap(width, height) {
 }
 
 // =======================
-//   DIALOGHI NPC (con quest)
+//   DIALOGHI NPC
 // =======================
 function getNpcDialogAndQuestUpdate(npcId, questStep) {
   let newQuestStep = questStep;
@@ -484,7 +421,7 @@ function getNpcDialogAndQuestUpdate(npcId, questStep) {
 }
 
 // =======================
-//    QUEST OBJECTIVE TEXT
+//    QUEST TEXT
 // =======================
 function getQuestObjective(questStep) {
   switch (questStep) {
@@ -502,21 +439,17 @@ function getQuestObjective(questStep) {
 }
 
 // =======================
-//    ENCOUNTER LOGIC
+//  ENCOUNTER LOGIC
 // =======================
-
-// tile che permettono incontri random (fuori dalle strade)
 function isRandomEncounterTile(tileType) {
   return tileType === TILE_TYPE.GRASS || tileType === TILE_TYPE.HOUSE;
 }
 
-// quanto è frequente l’incontro (0.0–1.0)
-const ENCOUNTER_CHANCE = 0.18; // ~18% per passo in zona "selvaggia"
+const ENCOUNTER_CHANCE = 0.18;
 
 // =======================
-//    QUIZ PORTE / OGGETTI
+//  QUIZ PORTE / OGGETTI
 // =======================
-
 function getDoorQuiz(doorKey) {
   switch (doorKey) {
     case "porta_troia":
@@ -564,7 +497,7 @@ function getDoorQuiz(doorKey) {
 }
 
 // =======================
-//  ATTACCO ED EFFETTI EQUIP
+//  DANNI & EQUIP
 // =======================
 function getEffectiveAttack(playerStats, equipment) {
   let bonus = 0;
@@ -581,9 +514,31 @@ function getDamageToPlayer(baseDamage, equipment) {
 }
 
 // =======================
+//  INTERIOR MAP HELPER
+// =======================
+function getInteriorMapForScene(scene) {
+  switch (scene) {
+    case "duomo":
+      return DUOMO_INTERIOR;
+    case "castle":
+      return CASTLE_INTERIOR;
+    case "villa":
+      return VILLA_INTERIOR;
+    case "amphi":
+      return AMPHI_INTERIOR;
+    default:
+      return DUOMO_INTERIOR;
+  }
+}
+
+// =======================
 //       APP
 // =======================
 export default function App() {
+  const [playerName, setPlayerName] = useState("");
+  const [mode, setMode] = useState("start"); // "start" | "world" | "dialog" | "battle" | "quiz" | "shop" | "gameover"
+  const [scene, setScene] = useState("world"); // "world" | "duomo" | "castle" | "villa" | "amphi"
+
   const [map] = useState(() => createLuceraMap(MAP_WIDTH, MAP_HEIGHT));
 
   const [player, setPlayer] = useState(() => ({
@@ -591,8 +546,6 @@ export default function App() {
     y: MAP_HEIGHT - 3,
   }));
 
-  const [mode, setMode] = useState("world"); // "world" | "dialog" | "battle" | "quiz"
-  const [scene, setScene] = useState("world"); // "world" | "duomo" | "castle" | "villa" | "amphi"
   const [currentDialog, setCurrentDialog] = useState(null);
 
   const [playerStats, setPlayerStats] = useState({
@@ -608,7 +561,11 @@ export default function App() {
     damageTaken: 0,
   });
 
-  // INVENTARIO
+  const [battleTurn, setBattleTurn] = useState(null); // "player" | "enemy"
+  const [playerTimer, setPlayerTimer] = useState(0);
+  const [enemyCountdown, setEnemyCountdown] = useState(0);
+  const [parryQueued, setParryQueued] = useState(false);
+
   const [inventory, setInventory] = useState({
     potion: 0,
     megapotion: 0,
@@ -616,20 +573,18 @@ export default function App() {
     shield: 0,
   });
 
-  // EQUIP
   const [equipment, setEquipment] = useState({
-    weapon: null, // "sword"
-    shield: null, // "shield"
+    weapon: null,
+    shield: null,
   });
 
-  // Pannelli UI
   const [showInventory, setShowInventory] = useState(false);
   const [showEquipment, setShowEquipment] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
 
-  // QUEST 1
+  const [coins, setCoins] = useState(0);
+
   const [questStep, setQuestStep] = useState(0);
-
-  // QUEST 2: porte visitate
   const [doorsVisited, setDoorsVisited] = useState({
     porta_troia: false,
     porta_foggia: false,
@@ -637,8 +592,6 @@ export default function App() {
     porta_san_severo: false,
     porta_san_giacomo: false,
   });
-
-  // ricompense delle porte già ottenute
   const [doorRewards, setDoorRewards] = useState({
     porta_troia: false,
     porta_foggia: false,
@@ -647,16 +600,136 @@ export default function App() {
     porta_san_giacomo: false,
   });
 
-  // quiz attuale
   const [quiz, setQuiz] = useState(null);
 
+  const [minibossDefeated, setMinibossDefeated] = useState({
+    duomo: false,
+    villa: false,
+    amphi: false,
+  });
+  const [finalBossDefeated, setFinalBossDefeated] = useState(false);
+
+  const [battleContext, setBattleContext] = useState({
+    type: null, // "random" | "miniboss_duomo" | "miniboss_villa" | "miniboss_amphi" | "final_boss"
+  });
+
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [allQuestsCompletedShown, setAllQuestsCompletedShown] = useState(false);
+
   // =======================
-  // MOVIMENTO + ENTER + I/E
+  //  RESET GAME
+  // =======================
+  function resetGame() {
+    setPlayer({
+      x: Math.floor(MAP_WIDTH / 2),
+      y: MAP_HEIGHT - 3,
+    });
+    setMode("world");
+    setScene("world");
+    setCurrentDialog(null);
+    setPlayerStats({
+      hp: 30,
+      maxHp: 30,
+      attack: 5,
+    });
+    setEnemyStats(null);
+    setBattleStats({ damageDealt: 0, damageTaken: 0 });
+    setBattleTurn(null);
+    setPlayerTimer(0);
+    setEnemyCountdown(0);
+    setParryQueued(false);
+    setInventory({
+      potion: 0,
+      megapotion: 0,
+      sword: 0,
+      shield: 0,
+    });
+    setEquipment({
+      weapon: null,
+      shield: null,
+    });
+    setShowInventory(false);
+    setShowEquipment(false);
+    setShopOpen(false);
+    setCoins(0);
+    setQuestStep(0);
+    setDoorsVisited({
+      porta_troia: false,
+      porta_foggia: false,
+      porta_albana: false,
+      porta_san_severo: false,
+      porta_san_giacomo: false,
+    });
+    setDoorRewards({
+      porta_troia: false,
+      porta_foggia: false,
+      porta_albana: false,
+      porta_san_severo: false,
+      porta_san_giacomo: false,
+    });
+    setQuiz(null);
+    setMinibossDefeated({
+      duomo: false,
+      villa: false,
+      amphi: false,
+    });
+    setFinalBossDefeated(false);
+    setBattleContext({ type: null });
+    setIsGameOver(false);
+    setAllQuestsCompletedShown(false);
+  }
+
+  function handleGameOver() {
+    setMode("gameover");
+    setScene("world");
+    setEnemyStats(null);
+    setBattleTurn(null);
+    setParryQueued(false);
+    setIsGameOver(true);
+  }
+
+  function canStartFinalBoss() {
+    return (
+      inventory.sword > 0 &&
+      inventory.shield > 0 &&
+      inventory.potion > 0 &&
+      inventory.megapotion > 0
+    );
+  }
+
+  // =======================
+  //   MOVIMENTO + TASTI
   // =======================
   useEffect(() => {
     function handleKeyDown(e) {
-      // toggle inventario (I) ed equip (E) solo in modalità world
-      if (mode === "world") {
+      // schermata iniziale o game over → nessun movimento
+      if (mode === "start" || mode === "gameover") {
+        return;
+      }
+
+      // parata con S durante turno nemico
+      if (mode === "battle" && battleTurn === "enemy") {
+        if (e.key === "s" || e.key === "S") {
+          e.preventDefault();
+          if (equipment.shield === "shield") {
+            setParryQueued(true);
+          }
+          return;
+        }
+      }
+
+      // modalità con cui NON si deve muovere
+      if (mode === "quiz" || mode === "dialog" || mode === "battle" || mode === "shop") {
+        if (mode === "quiz" && e.key === "Escape") {
+          e.preventDefault();
+          setMode("world");
+          setQuiz(null);
+        }
+        return;
+      }
+
+      // toggle inventario / equip (solo quando siamo in controllo, modalità world)
+      if (mode === "world" && scene === "world") {
         if (e.key === "i" || e.key === "I") {
           e.preventDefault();
           setShowInventory((prev) => !prev);
@@ -669,17 +742,7 @@ export default function App() {
         }
       }
 
-      // se siamo in quiz / dialog / battle, niente movimento
-      if (mode === "quiz" || mode === "dialog" || mode === "battle") {
-        if (mode === "quiz" && e.key === "Escape") {
-          e.preventDefault();
-          setMode("world");
-          setQuiz(null);
-        }
-        return;
-      }
-
-      // ESC o Invio negli interni: esci e torni alla mappa
+      // ESC/Invio negli interni per uscire
       if (scene !== "world" && (e.key === "Enter" || e.key === "Escape")) {
         e.preventDefault();
         if (mode === "world") {
@@ -688,7 +751,87 @@ export default function App() {
         return;
       }
 
-      // Invio sulla mappa per entrare negli interni
+      // tasti speciali nelle mini-mappe (B e M)
+      if (scene !== "world" && mode === "world") {
+        // Bazar nel Duomo
+        if ((e.key === "b" || e.key === "B") && scene === "duomo") {
+          e.preventDefault();
+          setShopOpen(true);
+          setMode("shop");
+          return;
+        }
+
+        // Miniboss / Boss
+        if (e.key === "m" || e.key === "M") {
+          e.preventDefault();
+
+          if (scene === "duomo") {
+            if (minibossDefeated.duomo) {
+              alert("Hai già sconfitto il miniboss del Duomo!");
+              return;
+            }
+            startBattle("miniboss_duomo", {
+              name: "Miniboss del Duomo",
+              hp: 25,
+              maxHp: 25,
+              attack: 4,
+            });
+            return;
+          }
+
+          if (scene === "villa") {
+            if (minibossDefeated.villa) {
+              alert("Hai già sconfitto il miniboss della Villa!");
+              return;
+            }
+            startBattle("miniboss_villa", {
+              name: "Miniboss della Villa",
+              hp: 28,
+              maxHp: 28,
+              attack: 5,
+            });
+            return;
+          }
+
+          if (scene === "amphi") {
+            if (minibossDefeated.amphi) {
+              alert("Hai già sconfitto il miniboss dell'Anfiteatro!");
+              return;
+            }
+            startBattle("miniboss_amphi", {
+              name: "Miniboss dell'Anfiteatro",
+              hp: 30,
+              maxHp: 30,
+              attack: 5,
+            });
+            return;
+          }
+
+          if (scene === "castle") {
+            if (finalBossDefeated) {
+              alert("Hai già sconfitto il boss del Castello!");
+              return;
+            }
+            if (!canStartFinalBoss()) {
+              setMode("dialog");
+              setCurrentDialog({
+                text:
+                  "Il potere del castello ti respinge. Ti servono almeno una spada, uno scudo, una pozione e una megapozione per affrontare questo boss.",
+              });
+              return;
+            }
+            startBattle("final_boss", {
+              name: "Boss del Castello",
+              hp: 45,
+              maxHp: 45,
+              attack: 7,
+            });
+            return;
+          }
+        }
+      }
+
+      // Invio sul mondo per entrare negli interni
       if (scene === "world" && e.key === "Enter") {
         e.preventDefault();
         if (mode !== "world") return;
@@ -696,21 +839,18 @@ export default function App() {
         const tileRaw = map[player.y][player.x];
         const tileType = tileRaw?.type || tileRaw;
 
-        if (tileType === TILE_TYPE.DUOMO) {
-          setScene("duomo");
-        } else if (tileType === TILE_TYPE.CASTLE) {
-          setScene("castle");
-        } else if (tileType === TILE_TYPE.VILLA) {
-          setScene("villa");
-        } else if (tileType === TILE_TYPE.AMPHI) {
-          setScene("amphi");
-        }
+        if (tileType === TILE_TYPE.DUOMO) setScene("duomo");
+        else if (tileType === TILE_TYPE.CASTLE) setScene("castle");
+        else if (tileType === TILE_TYPE.VILLA) setScene("villa");
+        else if (tileType === TILE_TYPE.AMPHI) setScene("amphi");
+
         return;
       }
 
-      // se siamo in un interno, niente movimento
+      // se siamo in un interno, nessun movimento (scelta: le mini-mappe sono esplorate via tasti B/M)
       if (scene !== "world") return;
 
+      // movimento sul mondo
       let dx = 0;
       let dy = 0;
 
@@ -755,10 +895,9 @@ export default function App() {
 
       const tile = map[newY][newX];
 
-      // muri non attraversabili
       if (tile === TILE_TYPE.WALL) return;
 
-      // NPC → quiz porte oppure dialogo
+      // NPC
       if (tile?.type === TILE_TYPE.NPC) {
         const npcId = tile.id;
 
@@ -792,12 +931,12 @@ export default function App() {
         return;
       }
 
-      // RANDOM ENCOUNTER
+      // random encounter fuori dalle strade
       const tileType = tile?.type || tile;
       if (isRandomEncounterTile(tileType)) {
         if (Math.random() < ENCOUNTER_CHANCE) {
           setPlayer({ x: newX, y: newY });
-          startBattle();
+          startBattle("random");
           return;
         }
       }
@@ -807,85 +946,215 @@ export default function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [player, map, mode, questStep, scene, doorRewards]);
+  }, [
+    player,
+    map,
+    mode,
+    questStep,
+    scene,
+    doorRewards,
+    equipment,
+    battleTurn,
+    inventory,
+    minibossDefeated,
+    finalBossDefeated,
+  ]);
 
   // =======================
   // BATTAGLIA
   // =======================
-  function startBattle() {
+  function startBattle(type = "random", enemyOverride) {
     setMode("battle");
     setBattleStats({ damageDealt: 0, damageTaken: 0 });
-    const enemy = {
-      name: "Spirito della pianura",
-      hp: 15,
-      maxHp: 15,
-      attack: 3,
-    };
+    setParryQueued(false);
+
+    const enemy =
+      enemyOverride || {
+        name: "Spirito della pianura",
+        hp: 15,
+        maxHp: 15,
+        attack: 3,
+      };
+
     setEnemyStats(enemy);
+    setBattleContext({ type });
+
+    const playerStarts = Math.random() < 0.5;
+    setBattleTurn(playerStarts ? "player" : "enemy");
+  }
+
+  // Timer turno giocatore (10s max)
+  useEffect(() => {
+    if (mode !== "battle" || battleTurn !== "player") return;
+
+    setPlayerTimer(10);
+    const id = setInterval(() => {
+      setPlayerTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(id);
+          // turno perso → passa al nemico
+          setBattleTurn("enemy");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [mode, battleTurn]);
+
+  // Conto alla rovescia attacco nemico
+  useEffect(() => {
+    if (mode !== "battle" || battleTurn !== "enemy" || !enemyStats) return;
+
+    setEnemyCountdown(3);
+    setParryQueued(false);
+
+    const id = setInterval(() => {
+      setEnemyCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(id);
+          enemyAttack();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, battleTurn, enemyStats]);
+
+  function enemyAttack() {
+    if (!enemyStats) return;
+
+    let damage;
+    if (parryQueued && equipment.shield === "shield") {
+      damage = 0; // parata perfetta
+    } else {
+      damage = Math.min(
+        playerStats.hp,
+        getDamageToPlayer(enemyStats.attack, equipment)
+      );
+    }
+
+    const newHp = playerStats.hp - damage;
+
+    setBattleStats((prev) => ({
+      ...prev,
+      damageTaken: prev.damageTaken + damage,
+    }));
+
+    if (newHp <= 0) {
+      setPlayerStats((prev) => ({ ...prev, hp: 0 }));
+      handleGameOver();
+    } else {
+      setPlayerStats((prev) => ({ ...prev, hp: newHp }));
+      setBattleTurn("player");
+    }
+
+    setParryQueued(false);
+  }
+
+  function finishBattleWithVictory() {
+    const type = battleContext.type || "random";
+
+    if (type === "random") {
+      // 40% chance di moneta
+      let extraMsg = "";
+      if (Math.random() < 0.4) {
+        setCoins((c) => c + 1);
+        extraMsg = "\nHai trovato una moneta!";
+      }
+
+      alert(
+        `Hai vinto la battaglia contro ${enemyStats.name}!\n` +
+          `Hai inflitto ${battleStats.damageDealt} danni e hai subito ${battleStats.damageTaken} danni.` +
+          extraMsg
+      );
+    } else if (type === "miniboss_duomo") {
+      setMinibossDefeated((prev) => ({ ...prev, duomo: true }));
+      alert(
+        `Hai sconfitto il miniboss del Duomo!\nDanni inflitti: ${battleStats.damageDealt}, danni subiti: ${battleStats.damageTaken}.`
+      );
+    } else if (type === "miniboss_villa") {
+      setMinibossDefeated((prev) => ({ ...prev, villa: true }));
+      alert(
+        `Hai sconfitto il miniboss della Villa!\nDanni inflitti: ${battleStats.damageDealt}, danni subiti: ${battleStats.damageTaken}.`
+      );
+    } else if (type === "miniboss_amphi") {
+      setMinibossDefeated((prev) => ({ ...prev, amphi: true }));
+      alert(
+        `Hai sconfitto il miniboss dell'Anfiteatro!\nDanni inflitti: ${battleStats.damageDealt}, danni subiti: ${battleStats.damageTaken}.`
+      );
+    } else if (type === "final_boss") {
+      setFinalBossDefeated(true);
+      alert(
+        `Hai sconfitto il Boss del Castello!\nDanni inflitti: ${battleStats.damageDealt}, danni subiti: ${battleStats.damageTaken}.`
+      );
+    }
+
+    setMode("world");
+    setEnemyStats(null);
+    setBattleTurn(null);
+    setParryQueued(false);
+    setBattleContext({ type: null });
   }
 
   function handlePlayerAttack() {
-    if (!enemyStats) return;
+    if (mode !== "battle" || battleTurn !== "player" || !enemyStats) return;
 
     const effectiveAttack = getEffectiveAttack(playerStats, equipment);
 
-    const damageThisHit = Math.min(enemyStats.hp, effectiveAttack);
-    const newEnemyHp = enemyStats.hp - damageThisHit;
-    const enemyStillAlive = newEnemyHp > 0;
+    setEnemyStats((prevEnemy) => {
+      if (!prevEnemy) return prevEnemy;
 
-    const updatedEnemy = {
-      ...enemyStats,
-      hp: Math.max(newEnemyHp, 0),
-    };
-    setEnemyStats(updatedEnemy);
+      const damageThisHit = Math.min(prevEnemy.hp, effectiveAttack);
+      const newEnemyHp = prevEnemy.hp - damageThisHit;
 
-    const totalDamageDealt = battleStats.damageDealt + damageThisHit;
-    setBattleStats((prev) => ({
-      ...prev,
-      damageDealt: totalDamageDealt,
-    }));
+      setBattleStats((prev) => ({
+        ...prev,
+        damageDealt: prev.damageDealt + damageThisHit,
+      }));
 
-    if (!enemyStillAlive) {
-      setMode("world");
-      setEnemyStats(null);
-      alert(
-        `Hai vinto la battaglia contro ${enemyStats.name}!\n` +
-          `Hai inflitto ${totalDamageDealt} danni e hai subito ${battleStats.damageTaken} danni.`
-      );
-      return;
-    }
+      if (newEnemyHp <= 0) {
+        // vittoria
+        finishBattleWithVictory();
+        return null;
+      }
 
-    const baseDamage = enemyStats.attack;
-    const damageToPlayer = Math.min(
-      playerStats.hp,
-      getDamageToPlayer(baseDamage, equipment)
-    );
-    const newPlayerHp = playerStats.hp - damageToPlayer;
-    const updatedPlayer = {
-      ...playerStats,
-      hp: Math.max(newPlayerHp, 0),
-    };
-    setPlayerStats(updatedPlayer);
-
-    setBattleStats((prev) => ({
-      ...prev,
-      damageTaken: prev.damageTaken + damageToPlayer,
-    }));
-
-    if (newPlayerHp <= 0) {
-      alert(
-        "Sei stato sconfitto! (per ora ricarica la pagina per ricominciare 😅)"
-      );
-    }
+      // passa al nemico
+      setBattleTurn("enemy");
+      return { ...prevEnemy, hp: newEnemyHp };
+    });
   }
 
   function handleBattleRun() {
-    setMode("world");
-    setEnemyStats(null);
+    if (mode !== "battle") return;
+
+    const fleeDamage = 5;
+    const actualDamage = Math.min(playerStats.hp, fleeDamage);
+    const newHp = playerStats.hp - actualDamage;
+
+    alert(
+      `Sei fuggito dalla battaglia ma hai subito ${actualDamage} danni durante la fuga.`
+    );
+
+    setPlayerStats((prev) => ({ ...prev, hp: newHp }));
+
+    if (newHp <= 0) {
+      handleGameOver();
+    } else {
+      setMode("world");
+      setEnemyStats(null);
+      setBattleTurn(null);
+      setParryQueued(false);
+      setBattleContext({ type: null });
+    }
   }
 
   // =======================
-  // USO OGGETTI / EQUIP
+  // USO OGGETTI
   // =======================
   function usePotion() {
     if (inventory.potion <= 0) {
@@ -897,8 +1166,10 @@ export default function App() {
       return;
     }
     const heal = 10;
-    const newHp = Math.min(playerStats.maxHp, playerStats.hp + heal);
-    setPlayerStats((prev) => ({ ...prev, hp: newHp }));
+    setPlayerStats((prev) => ({
+      ...prev,
+      hp: Math.min(prev.maxHp, prev.hp + heal),
+    }));
     setInventory((prev) => ({ ...prev, potion: prev.potion - 1 }));
   }
 
@@ -938,6 +1209,30 @@ export default function App() {
   }
 
   // =======================
+  // SHOP (BAZAR)
+  // =======================
+  const POTION_PRICE = 3;
+  const MEGAPOTION_PRICE = 5;
+
+  function handleBuyPotion() {
+    if (coins < POTION_PRICE) {
+      alert("Non hai abbastanza monete per comprare una pozione.");
+      return;
+    }
+    setCoins((c) => c - POTION_PRICE);
+    setInventory((prev) => ({ ...prev, potion: prev.potion + 1 }));
+  }
+
+  function handleBuyMegapotion() {
+    if (coins < MEGAPOTION_PRICE) {
+      alert("Non hai abbastanza monete per comprare una megapozione.");
+      return;
+    }
+    setCoins((c) => c - MEGAPOTION_PRICE);
+    setInventory((prev) => ({ ...prev, megapotion: prev.megapotion + 1 }));
+  }
+
+  // =======================
   // QUIZ PORTE
   // =======================
   function handleQuizAnswer(index) {
@@ -974,14 +1269,49 @@ export default function App() {
   }
 
   // =======================
+  //  QUEST COMPLETION CHECK
+  // =======================
+  useEffect(() => {
+    if (!playerName || allQuestsCompletedShown) return;
+
+    const mainQuestDone = questStep >= 3;
+    const allDoorsVisited = Object.values(doorsVisited).every(Boolean);
+    const allMiniboss = Object.values(minibossDefeated).every(Boolean);
+    const finalDone = finalBossDefeated;
+
+    if (mainQuestDone && allDoorsVisited && allMiniboss && finalDone) {
+      alert(
+        `Complimenti ${playerName}, hai completato tutte le quest. Tu sì, che sei un vero lucerino!`
+      );
+      setAllQuestsCompletedShown(true);
+    }
+  }, [
+    playerName,
+    questStep,
+    doorsVisited,
+    minibossDefeated,
+    finalBossDefeated,
+    allQuestsCompletedShown,
+  ]);
+
+  // =======================
   // RENDER
   // =======================
   const questText = getQuestObjective(questStep);
+
   const doorsCount = Object.values(doorsVisited).filter(Boolean).length;
   const doorsQuestText =
     doorsCount === 5
       ? "Quest 2: hai visitato tutte le porte di Lucera! 🎉"
       : `Quest 2: porte visitate ${doorsCount}/5`;
+
+  const minibossCount = Object.values(minibossDefeated).filter(Boolean).length;
+  const secondaryQuestText =
+    minibossCount === 3 && finalBossDefeated
+      ? "Quest 3: tutti i miniboss e il boss finale sono stati sconfitti! 🎉"
+      : `Quest 3: miniboss sconfitti ${minibossCount}/3, boss finale ${
+          finalBossDefeated ? "✔️" : "✖️"
+        }`;
 
   const effectiveAttack = getEffectiveAttack(playerStats, equipment);
 
@@ -989,7 +1319,6 @@ export default function App() {
   if (scene === "world") {
     const tileRaw = map[player.y][player.x];
     const tileType = tileRaw?.type || tileRaw;
-
     if (
       tileType === TILE_TYPE.DUOMO ||
       tileType === TILE_TYPE.CASTLE ||
@@ -998,6 +1327,9 @@ export default function App() {
     ) {
       enterHint = 'Premi "Invio" per accedere alla mini-mappa';
     }
+  } else {
+    enterHint =
+      'Sei in una mini-mappa: premi "B" per il bazar (nel Duomo), "M" per cercare un miniboss/boss, "Invio" o "Esc" per uscire.';
   }
 
   let mainView = null;
@@ -1007,16 +1339,32 @@ export default function App() {
     mainView = <InteriorMap scene={scene} />;
   }
 
+  // SCHERMATA INIZIALE
+  if (mode === "start") {
+    return (
+      <div className="game-root">
+        <StartScreen
+          playerName={playerName}
+          setPlayerName={setPlayerName}
+          onStart={() => setMode("world")}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="game-root">
       <h1 className="title">Mini RPG Lucera</h1>
 
       <div className="hud">
+        <span>Giocatore: {playerName || "-"}</span>
         <span>
           HP: {playerStats.hp} / {playerStats.maxHp}
         </span>
         <span>ATT: {effectiveAttack}</span>
+        <span>Monete: {coins}</span>
         <span>Modalità: {mode}</span>
+        <span>Turno: {battleTurn || "-"}</span>
         <span>Scena: {scene}</span>
         <span>
           Posizione: ({player.x}, {player.y})
@@ -1026,11 +1374,13 @@ export default function App() {
       <div className="quest">
         <div>{questText}</div>
         <div>{doorsQuestText}</div>
+        <div>{secondaryQuestText}</div>
       </div>
 
       {enterHint && <div className="enter-hint">{enterHint}</div>}
 
-      {showInventory && (
+      {/* Pannelli solo in world */}
+      {mode === "world" && scene === "world" && showInventory && (
         <InventoryPanel
           inventory={inventory}
           onUsePotion={usePotion}
@@ -1039,7 +1389,7 @@ export default function App() {
         />
       )}
 
-      {showEquipment && (
+      {mode === "world" && scene === "world" && showEquipment && (
         <EquipmentPanel
           inventory={inventory}
           equipment={equipment}
@@ -1059,14 +1409,43 @@ export default function App() {
         <QuizDialog quiz={quiz} onAnswer={handleQuizAnswer} />
       )}
 
+      {mode === "shop" && shopOpen && (
+        <ShopDialog
+          coins={coins}
+          potionPrice={POTION_PRICE}
+          megapotionPrice={MEGAPOTION_PRICE}
+          onBuyPotion={handleBuyPotion}
+          onBuyMegapotion={handleBuyMegapotion}
+          onClose={() => {
+            setShopOpen(false);
+            setMode("world");
+          }}
+        />
+      )}
+
       {mode === "battle" && enemyStats && (
         <BattleScreen
           playerStats={playerStats}
           effectiveAttack={effectiveAttack}
           equipment={equipment}
           enemy={enemyStats}
+          battleTurn={battleTurn}
+          playerTimer={playerTimer}
+          enemyCountdown={enemyCountdown}
           onAttack={handlePlayerAttack}
+          onUsePotion={usePotion}
+          onUseMegapotion={useMegapotion}
           onRun={handleBattleRun}
+        />
+      )}
+
+      {isGameOver && (
+        <GameOverScreen
+          playerName={playerName}
+          onRestart={resetGame}
+          onQuit={() => {
+            window.close();
+          }}
         />
       )}
 
@@ -1076,9 +1455,8 @@ export default function App() {
 }
 
 // =======================
-//   WORLD MAP COMPONENT (con camera)
+//   WORLD MAP (con camera)
 // =======================
-
 function WorldMap({ map, player }) {
   const rows = map.length;
   const cols = map[0].length;
@@ -1187,22 +1565,6 @@ function WorldMap({ map, player }) {
 // =======================
 //   INTERIOR MAP
 // =======================
-
-function getInteriorMapForScene(scene) {
-  switch (scene) {
-    case "duomo":
-      return DUOMO_INTERIOR;
-    case "castle":
-      return CASTLE_INTERIOR;
-    case "villa":
-      return VILLA_INTERIOR;
-    case "amphi":
-      return AMPHI_INTERIOR;
-    default:
-      return DUOMO_INTERIOR;
-  }
-}
-
 function InteriorMap({ scene }) {
   const map = getInteriorMapForScene(scene);
   const rows = map.length;
@@ -1263,7 +1625,7 @@ function InteriorMap({ scene }) {
 }
 
 // =======================
-//   DIALOG, QUIZ & BATTLE UI
+//   DIALOG, QUIZ, SHOP & BATTLE UI
 // =======================
 function DialogBox({ text, onClose }) {
   return (
@@ -1294,18 +1656,55 @@ function QuizDialog({ quiz, onAnswer }) {
   );
 }
 
+function ShopDialog({
+  coins,
+  potionPrice,
+  megapotionPrice,
+  onBuyPotion,
+  onBuyMegapotion,
+  onClose,
+}) {
+  return (
+    <div className="overlay">
+      <div className="dialog-box">
+        <h2>Bazar del Duomo</h2>
+        <p>Monete disponibili: {coins}</p>
+        <div className="shop-items">
+          <div>
+            <p>Pozione (+10 HP) – costo: {potionPrice} monete</p>
+            <button onClick={onBuyPotion}>Compra Pozione</button>
+          </div>
+          <div>
+            <p>Megapozione (HP completi) – costo: {megapotionPrice} monete</p>
+            <button onClick={onBuyMegapotion}>Compra Megapozione</button>
+          </div>
+        </div>
+        <button onClick={onClose}>Chiudi</button>
+      </div>
+    </div>
+  );
+}
+
 function BattleScreen({
   playerStats,
   effectiveAttack,
   equipment,
   enemy,
+  battleTurn,
+  playerTimer,
+  enemyCountdown,
   onAttack,
+  onUsePotion,
+  onUseMegapotion,
   onRun,
 }) {
+  const isPlayerTurn = battleTurn === "player";
+
   return (
     <div className="overlay">
       <div className="battle-box">
         <h2>⚔️ Battaglia</h2>
+
         <div className="battle-status">
           <div>
             <h3>Tu</h3>
@@ -1327,9 +1726,60 @@ function BattleScreen({
           </div>
         </div>
 
+        <div className="battle-turn-info">
+          {isPlayerTurn ? (
+            <p>
+              È il <b>tuo turno</b> – tempo rimasto: {playerTimer}s
+            </p>
+          ) : (
+            <p>
+              Turno del nemico – attacco tra: {enemyCountdown}s
+              {equipment.shield === "shield" && (
+                <>
+                  {" "}
+                  (premi <b>S</b> in questo lasso di tempo per provare a
+                  parare!)
+                </>
+              )}
+            </p>
+          )}
+        </div>
+
         <div className="battle-actions">
-          <button onClick={onAttack}>Attacca</button>
-          <button onClick={onRun}>Fuggi</button>
+          <button onClick={onAttack} disabled={!isPlayerTurn}>
+            Attacca
+          </button>
+          <button onClick={onUsePotion} disabled={!isPlayerTurn}>
+            Usa Pozione
+          </button>
+          <button onClick={onUseMegapotion} disabled={!isPlayerTurn}>
+            Usa Megapozione
+          </button>
+          <button onClick={onRun} disabled={!isPlayerTurn}>
+            Fuggi
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =======================
+//   GAME OVER SCREEN
+// =======================
+function GameOverScreen({ playerName, onRestart, onQuit }) {
+  return (
+    <div className="overlay">
+      <div className="dialog-box">
+        <h2>Game Over</h2>
+        <p>
+          {playerName
+            ? `${playerName}, sei stato sconfitto. Vuoi ricominciare?`
+            : "Sei stato sconfitto. Vuoi ricominciare?"}
+        </p>
+        <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+          <button onClick={onRestart}>Sì</button>
+          <button onClick={onQuit}>No</button>
         </div>
       </div>
     </div>
@@ -1352,6 +1802,9 @@ function InventoryPanel({ inventory, onUsePotion, onUseMegapotion, onClose }) {
 
         <p>Megapozioni: {inventory.megapotion}</p>
         <button onClick={onUseMegapotion}>Usa Megapozione (HP completi)</button>
+
+        <p>Spade: {inventory.sword}</p>
+        <p>Scudi: {inventory.shield}</p>
       </div>
     </div>
   );
@@ -1395,17 +1848,43 @@ function EquipmentPanel({
   );
 }
 
+// =======================
+//   START SCREEN
+// =======================
+function StartScreen({ playerName, setPlayerName, onStart }) {
+  return (
+    <div className="overlay">
+      <div className="dialog-box">
+        <h2>Benvenuto a Mini RPG Lucera</h2>
+        <p>Inserisci il nome del giocatore:</p>
+        <input
+          type="text"
+          value={playerName}
+          onChange={(e) => setPlayerName(e.target.value)}
+          placeholder="Il tuo nome..."
+          style={{ width: "100%", marginBottom: "1rem" }}
+        />
+        <button onClick={onStart} disabled={!playerName.trim()}>
+          Inizia
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ControlsHint() {
   return (
     <div className="controls">
       <p>
-        Usa <b>WASD</b> o <b>frecce</b> per muoverti. Premi <b>Invio</b> quando
-        sei su Duomo, Castello, Villa o Anfiteatro per entrare negli interni, e
-        premi di nuovo <b>Invio</b> o <b>Esc</b> per uscire. Parla con l'NPC a
-        Porta Troia, poi in piazza Duomo e infine alla villa per completare la
-        Quest 1; visita tutte le porte per completare la Quest 2. Fuori dalle
-        strade puoi incontrare nemici casuali! Premi <b>I</b> per aprire/chiudere
-        l'inventario e <b>E</b> per aprire/chiudere l'equipaggiamento.
+        Usa <b>WASD</b> o <b>frecce</b> per muoverti sulla mappa principale.{" "}
+        Premi <b>Invio</b> quando sei su Duomo, Castello, Villa o Anfiteatro per
+        entrare nella mini-mappa, e premi di nuovo <b>Invio</b> o <b>Esc</b> per
+        uscire. Nelle mini-mappe premi <b>B</b> (nel Duomo) per aprire il
+        bazar e <b>M</b> per cercare un miniboss o il boss del castello. Fuori
+        dalle strade puoi incontrare nemici casuali! Premi <b>I</b> per
+        inventario, <b>E</b> per equip. In battaglia: hai <b>10s</b> per
+        scegliere la tua azione; durante il turno nemico, se hai lo scudo,
+        premi <b>S</b> per provare a parare il colpo.
       </p>
     </div>
   );
