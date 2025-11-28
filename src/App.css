@@ -1,0 +1,213 @@
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: #020617;
+  color: #e5e7eb;
+}
+
+body {
+  margin: 0;
+}
+
+.game-root {
+  min-height: 100vh;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+
+.title {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.hud {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.world-map {
+  display: grid;
+  gap: 1px;
+  background-color: #020617;
+  padding: 8px;
+  border-radius: 0;          /* niente bordi arrotondati */
+  box-shadow: none;          /* niente "riquadro" */
+  /* niente max-width / max-height / overflow */
+}
+
+.enter-hint {
+  margin-top: 4px;
+  font-size: 0.9rem;
+  font-style: italic;
+  text-align: center;
+  opacity: 0.9;
+}
+
+.tile {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* basi */
+.tile-wall {
+  background: #111827;
+}
+
+.tile-grass {
+  background: #065f46;
+}
+
+.tile-road {
+  background: #9ca3af;
+}
+
+/* luoghi */
+.tile-castle {
+  background: #92400e;
+}
+
+.tile-duomo {
+  background: #e5e7eb;
+}
+
+.tile-villa {
+  background: #15803d;
+}
+
+.tile-house {
+  background: #4b5563;
+}
+
+/* NPC, nemico, player */
+.tile-npc {
+  background: #facc15;
+}
+
+.tile-enemy {
+  background: #b91c1c;
+}
+
+.tile-player {
+  box-shadow: 0 0 0 2px #e5e7eb;
+  background: #3b82f6;
+}
+
+/* letterine C D V H */
+.tile-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.tile-amphi {
+  background: #f97316; /* arancione tipo pietra/cotto */
+}
+
+/* overlay dialoghi e battaglie */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-box,
+.battle-box {
+  background: #020617;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 380px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  border: 1px solid #4b5563;
+}
+
+.dialog-box p {
+  margin-bottom: 1rem;
+}
+
+.dialog-box button,
+.battle-actions button {
+  background: #3b82f6;
+  color: #e5e7eb;
+  border: none;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.dialog-box button:hover,
+.battle-actions button:hover {
+  filter: brightness(1.1);
+}
+
+.battle-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.battle-status h3 {
+  margin: 0 0 0.3rem 0;
+}
+
+.battle-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.controls {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.side-panel {
+  position: absolute;
+  top: 60px;
+  right: 10px;
+  width: 220px;
+  background: #222;
+  color: #fff;
+  border: 2px solid #555;
+  padding: 8px;
+  z-index: 10;
+  font-size: 12px;
+}
+
+.side-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.side-panel-header h2 {
+  font-size: 14px;
+  margin: 0;
+}
+
+.side-panel-header button {
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+.side-panel-body button {
+  display: block;
+  margin: 4px 0 8px;
+  width: 100%;
+}
